@@ -1,0 +1,85 @@
+--- %{PREFIX}hxrv_pins:
+  pin_id:
+    Field: pin_id
+    Type: int(11)
+    'Null': NO
+    Key: PRI
+    Default: ~
+    Extra: AUTO_INCREMENT
+  pin_blog_id:
+    Field: pin_blog_id
+    Type: int(11)
+    'Null': YES
+    Key: ~
+    Default: '1'
+    Extra: ~
+  pin_page_url:
+    Field: pin_page_url
+    Type: varchar(2048)
+    'Null': YES
+    Key: ~
+    Default: ~
+    Extra: ~
+  pin_selector:
+    Field: pin_selector
+    Type: varchar(1024)
+    'Null': YES
+    Key: ~
+    Default: ~
+    Extra: ~
+  pin_offset_x:
+    Field: pin_offset_x
+    Type: float
+    'Null': YES
+    Key: ~
+    Default: '50'
+    Extra: ~
+  pin_offset_y:
+    Field: pin_offset_y
+    Type: float
+    'Null': YES
+    Key: ~
+    Default: '50'
+    Extra: ~
+  pin_text_excerpt:
+    Field: pin_text_excerpt
+    Type: varchar(500)
+    'Null': YES
+    Key: ~
+    Default: ~
+    Extra: ~
+  pin_comment:
+    Field: pin_comment
+    Type: text
+    'Null': YES
+    Key: ~
+    Default: ~
+    Extra: ~
+  pin_author:
+    Field: pin_author
+    Type: varchar(255)
+    'Null': YES
+    Key: ~
+    Default: ~
+    Extra: ~
+  pin_status:
+    Field: pin_status
+    Type: varchar(20)
+    'Null': NO
+    Key: ~
+    Default: open
+    Extra: ~
+  pin_created_at:
+    Field: pin_created_at
+    Type: datetime
+    'Null': YES
+    Key: ~
+    Default: ~
+    Extra: ~
+  pin_updated_at:
+    Field: pin_updated_at
+    Type: datetime
+    'Null': YES
+    Key: ~
+    Default: ~
+    Extra: ~

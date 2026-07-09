@@ -1,0 +1,240 @@
+<!-- HXRV Overlay ============================================================
+     このファイルをテーマの include/ に置き、公開テンプレートの
+     </body> 直前で @include して使います。
+
+     ▼ 設置手順
+       1. このファイルを themes/{テーマ名}/include/hxrv-overlay.html に置く
+       2. テーマの </body> 直前に以下を追記:
+            <!-- BEGIN_IF [%{SUID}/nem] -->
+            @include("/include/hxrv-overlay.html")
+            <!-- END_IF -->
+
+     ▼ 環境に合わせて書き換える箇所は下の【設定】の3行だけです。
+        初期値はドメイン直下設置を想定しています。
+        サブディレクトリに設置している場合は、先頭に自分の
+        ディレクトリ名を足してください。
+        例）直下  : /extension/plugins/...   /bid/1/admin/...（初期値のまま）
+            /hoge/: /hoge/extension/plugins/...  /hoge/bid/1/admin/...
+     ======================================================================== -->
+
+<!-- 【設定①】HXRV の CSS（自分の設置パスに合わせる） -->
+<link rel="stylesheet" href="/extension/plugins/HxrvAcms/assets/css/hxrv.css">
+
+<!-- 【設定②】Alpine.js（CDN。バージョンは固定推奨。基本このままでOK） -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+
+<!-- HXRV Root Element
+     ・hxrvApp() は <head> で読み込む hxrv-acms.js が定義済み（手順4参照）
+     ・author はサーバー側(SUID)で付与するため data-user-name は不要
+-->
+<div
+    id="hxrv-root"
+    x-data="hxrvApp()"
+    x-init="init()"
+    :class="{ 'is-open': panelOpen }"
+    data-api-base="/bid/1/admin/app_hxrv_api/"
+><!-- 【設定③】↑ data-api-base も設置パスに合わせる（bid の番号は対象ブログID） -->
+    <!-- ----------------------------------------------------------------
+         フローティングアクションボタン（画面右端・縦中央）
+         ---------------------------------------------------------------- -->
+    <button
+        class="hxrv-fab"
+        :class="{ 'hxrv-fab--placing': isPlacing }"
+        @click="isPlacing ? cancelPlacing() : (panelOpen = !panelOpen)"
+        :title="isPlacing ? 'キャンセル (Esc)' : 'HXRVレビュー'"
+        aria-label="HXRV"
+    >
+        <!-- アイコン: ピンSVG -->
+        <svg class="hxrv-fab__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+    </button>
+
+    <!-- ----------------------------------------------------------------
+         ピン配置モード表示
+         ---------------------------------------------------------------- -->
+    <div
+        x-show="isPlacing"
+        style="position:fixed;top:12px;left:50%;transform:translateX(-50%);
+               background:#E07820;color:#fff;padding:8px 16px;border-radius:20px;
+               font-size:13px;font-weight:700;z-index:100000;pointer-events:none;"
+    >
+        📌 フィードバックを追加する場所をクリック（Escでキャンセル）
+    </div>
+
+    <!-- ----------------------------------------------------------------
+         サイドパネル
+         ---------------------------------------------------------------- -->
+    <div
+        class="hxrv-panel"
+        x-show="panelOpen"
+        x-transition:enter="hxrv-slide-in"
+        x-transition:leave="hxrv-slide-out"
+        style="display:none"
+    >
+        <!-- パネルヘッダー -->
+        <div class="hxrv-panel__header">
+            <h2 class="hxrv-panel__title">
+                📋 HXRV
+                <span class="hxrv-panel__count" x-text="pins.length + ' pins'"></span>
+            </h2>
+            <button
+                @click="panelOpen = false"
+                style="background:none;border:none;color:#fff;cursor:pointer;font-size:18px;line-height:1;"
+                aria-label="閉じる"
+            >×</button>
+        </div>
+
+        <!-- パネルボディ -->
+        <div class="hxrv-panel__body">
+
+            <!-- ピン入力フォーム（配置後に表示） -->
+            <template x-if="showForm && pendingPin">
+                <div class="hxrv-form">
+                    <div class="hxrv-form__label">対象要素</div>
+                    <div class="hxrv-form__selector" x-text="pendingPin.selector"></div>
+                    <div class="hxrv-form__label">コメント</div>
+                    <textarea
+                        class="hxrv-form__textarea"
+                        x-model="formComment"
+                        placeholder="修正指示や確認事項を入力してください..."
+                        @keydown.ctrl.enter="savePin()"
+                    ></textarea>
+                    <div style="display:flex;gap:8px;">
+                        <button class="hxrv-btn hxrv-btn--primary" @click="savePin()">保存</button>
+                        <button
+                            class="hxrv-btn hxrv-btn--ghost"
+                            @click="showForm=false;pendingPin=null;"
+                        >キャンセル</button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ピン詳細（マーカークリック時） -->
+            <template x-if="activePin">
+                <div class="hxrv-form">
+                    <div class="hxrv-form__label">
+                        ピン #<span x-text="activePin.pin_id"></span>
+                        &nbsp;
+                        <span
+                            class="hxrv-badge"
+                            :style="activePin.pin_status === 'resolved' ? 'background:#E8E8E8;color:#888' : ''"
+                            x-text="activePin.pin_status === 'resolved' ? '✓ 解決済み' : '● 未解決'"
+                        ></span>
+                    </div>
+                    <div class="hxrv-form__selector" x-text="activePin.pin_selector"></div>
+                    <p class="hxrv-pin-item__comment" x-text="activePin.pin_comment"></p>
+                    <div class="hxrv-pin-item__meta" style="margin-top:8px;">
+                        <span x-text="activePin.pin_author"></span>
+                        <span>·</span>
+                        <span x-text="activePin.pin_created_at?.slice(0,10)"></span>
+                    </div>
+                    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+                        <button
+                            class="hxrv-btn hxrv-btn--ghost"
+                            @click="toggleStatus(activePin)"
+                            x-text="activePin.pin_status === 'open' ? '✓ 解決済みにする' : '↩ 未解決に戻す'"
+                        ></button>
+                        <button
+                            class="hxrv-btn hxrv-btn--danger"
+                            @click="deletePin(activePin.pin_id)"
+                        >削除</button>
+                        <button
+                            class="hxrv-btn hxrv-btn--ghost"
+                            @click="activePinId = null"
+                        >閉じる</button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ピンリスト -->
+            <template x-if="!showForm && !activePin">
+                <div>
+                    <!-- 未解決ピン -->
+                    <template x-if="openPins.length > 0">
+                        <div>
+                            <div class="hxrv-form__label" style="margin-bottom:6px;">
+                                未解決 (<span x-text="openPins.length"></span>)
+                            </div>
+                            <template x-for="pin in openPins" :key="pin.pin_id">
+                                <div
+                                    class="hxrv-pin-item"
+                                    :class="{ 'hxrv-pin-item--active': activePinId == pin.pin_id }"
+                                    @click="activePinId = pin.pin_id"
+                                >
+                                    <div class="hxrv-pin-item__meta">
+                                        <!-- 番号クリックで位置へスクロール -->
+                                        <button
+                                            class="hxrv-pin-nav-btn"
+                                            @click.stop="scrollToPin(pin)"
+                                            :title="'#' + pin.pin_id + ' の位置へ移動'"
+                                            x-text="'#' + pin.pin_id"
+                                        ></button>
+                                        <span x-text="pin.pin_author"></span>
+                                        <span>·</span>
+                                        <span x-text="pin.pin_created_at?.slice(0,10)"></span>
+                                    </div>
+                                    <p class="hxrv-pin-item__comment" x-text="pin.pin_comment"></p>
+                                    <div class="hxrv-pin-item__selector" x-text="pin.pin_selector"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- 解決済みピン -->
+                    <template x-if="resolvedPins.length > 0">
+                        <div style="margin-top:12px;">
+                            <div class="hxrv-form__label" style="margin-bottom:6px;color:#888;">
+                                解決済み (<span x-text="resolvedPins.length"></span>)
+                            </div>
+                            <template x-for="pin in resolvedPins" :key="pin.pin_id">
+                                <div
+                                    class="hxrv-pin-item hxrv-pin-item--resolved"
+                                    @click="activePinId = pin.pin_id"
+                                >
+                                    <div class="hxrv-pin-item__meta">
+                                        <button
+                                            class="hxrv-pin-nav-btn"
+                                            @click.stop="scrollToPin(pin)"
+                                            :title="'#' + pin.pin_id + ' の位置へ移動'"
+                                            x-text="'#' + pin.pin_id"
+                                        ></button>
+                                        <span x-text="pin.pin_author"></span>
+                                    </div>
+                                    <p class="hxrv-pin-item__comment" x-text="pin.pin_comment?.slice(0,60)"></p>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- 空状態 -->
+                    <template x-if="pins.length === 0 && !isLoading">
+                        <div class="hxrv-empty">
+                            <div style="font-size:24px;margin-bottom:8px;">📌</div>
+                            <div>このページにはまだピンがありません</div>
+                            <div style="margin-top:4px;color:#aaa;font-size:11px;">下の「ピンを追加」でフィードバックを追記できます</div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- パネルフッター -->
+        <div class="hxrv-panel__footer">
+            <button
+                class="hxrv-btn hxrv-btn--place"
+                @click="startPlacing(); panelOpen = false;"
+            >
+                📌 ピンを追加
+            </button>
+            <button
+                class="hxrv-btn hxrv-btn--export"
+                @click="exportMarkdown()"
+                :disabled="openPins.length === 0"
+            >
+                <span x-show="!exportDone">📋 Markdown</span>
+                <span x-show="exportDone">✅ コピー完了</span>
+            </button>
+        </div>
+    </div>
+</div>

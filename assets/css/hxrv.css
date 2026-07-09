@@ -1,0 +1,417 @@
+/* ==========================================================================
+   HXRV — a-blog cms 版
+   WP版からの変更: クラス名はそのまま、a-blog cms管理画面との競合を避けるため
+   すべて #hxrv-root を起点にスコープ
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CSS カスタムプロパティ (WP版と同一)
+   -------------------------------------------------------------------------- */
+:root {
+    --hxrv-green:        #0F6E56;
+    --hxrv-green-light:  #12876A;
+    --hxrv-green-pale:   #E8F5F1;
+    --hxrv-white:        #FFFFFF;
+    --hxrv-gray-100:     #F5F5F5;
+    --hxrv-gray-200:     #E8E8E8;
+    --hxrv-gray-500:     #888888;
+    --hxrv-gray-800:     #333333;
+    --hxrv-orange:       #E07820;
+    --hxrv-radius:       8px;
+    --hxrv-shadow:       0 4px 24px rgba(0,0,0,0.15);
+    --hxrv-panel-w:      320px;
+    --hxrv-z:            99999;
+}
+
+/* --------------------------------------------------------------------------
+   ピンマーカー（ページ上に配置）
+   -------------------------------------------------------------------------- */
+.hxrv-pin-marker {
+    position:        absolute;
+    z-index:         var(--hxrv-z);
+    width:           28px;
+    height:          28px;
+    border-radius:   50%;
+    background:      var(--hxrv-green);
+    border:          2px solid var(--hxrv-white);
+    box-shadow:      0 2px 8px rgba(0,0,0,0.3);
+    cursor:          pointer;
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    padding:         0;
+    transition:      transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hxrv-pin-marker:hover {
+    transform:   scale(1.2);
+    box-shadow:  0 4px 12px rgba(0,0,0,0.35);
+}
+
+.hxrv-pin-marker[data-status="resolved"] {
+    background:  var(--hxrv-gray-500);
+    opacity:     0.6;
+}
+
+/* テキスト再アンカーで復元 */
+.hxrv-pin-marker[data-stage="text"] {
+    border-color: var(--hxrv-orange);
+}
+
+.hxrv-pin-marker__num {
+    color:       var(--hxrv-white);
+    font-size:   11px;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   フローティングボタン（右端・縦中央。トップへ戻るボタンと干渉しない位置）
+   -------------------------------------------------------------------------- */
+#hxrv-root {
+    position:   fixed;
+    top:        50%;
+    right:      0;                 /* 右端に寄せる */
+    transform:  translateY(-50%);  /* 縦中央 */
+    z-index:    var(--hxrv-z);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size:  14px;
+    line-height: 1.5;
+}
+
+.hxrv-fab {
+    width:           52px;
+    height:          52px;
+    border-radius:   26px 0 0 26px;  /* 左側だけ丸く（右端に貼り付く形） */
+    background:      var(--hxrv-green);
+    border:          none;
+    box-shadow:      var(--hxrv-shadow);
+    cursor:          pointer;
+    color:           var(--hxrv-white);
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    padding-right:   6px;            /* アイコンを少し左に寄せる */
+
+    /* 右端に半分隠す → hoverでスッと出す */
+    transform:       translateX(20px);
+    opacity:         0.85;
+    transition:      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                     background 0.2s ease,
+                     opacity 0.2s ease,
+                     box-shadow 0.2s ease;
+}
+
+.hxrv-fab:hover {
+    background:  var(--hxrv-green-light);
+    transform:   translateX(0);      /* 完全に出てくる */
+    opacity:     1;
+}
+
+/* パネルが開いているときは完全に出したままにする（JSで is-open を付与） */
+#hxrv-root.is-open .hxrv-fab,
+.hxrv-fab.is-active {
+    transform: translateX(0);
+    opacity:   1;
+}
+
+.hxrv-fab--placing {
+    background:  var(--hxrv-orange);
+    animation:   hxrv-pulse 1.2s ease-in-out infinite;
+    transform:   translateX(0);   /* 配置モード中は完全表示 */
+    opacity:     1;
+}
+
+@keyframes hxrv-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(224,120,32,0.4); }
+    50%       { box-shadow: 0 0 0 10px rgba(224,120,32,0); }
+}
+
+.hxrv-fab__icon {
+    width:  22px;
+    height: 22px;
+    fill:   currentColor;
+}
+
+/* --------------------------------------------------------------------------
+   サイドパネル
+   -------------------------------------------------------------------------- */
+.hxrv-panel {
+    position:     fixed;
+    top:          50%;
+    right:        64px;                    /* FABの左側に配置 */
+    transform:    translateY(-50%);
+    width:        var(--hxrv-panel-w);
+    max-height:   calc(100vh - 48px);
+    background:   var(--hxrv-white);
+    border-radius: var(--hxrv-radius);
+    box-shadow:   var(--hxrv-shadow);
+    display:      flex;
+    flex-direction: column;
+    overflow:     hidden;
+    z-index:      var(--hxrv-z);
+}
+
+.hxrv-panel__header {
+    display:        flex;
+    align-items:    center;
+    justify-content: space-between;
+    padding:        12px 16px;
+    background:     var(--hxrv-green);
+    color:          var(--hxrv-white);
+    flex-shrink:    0;
+}
+
+.hxrv-panel__title {
+    font-size:   14px;
+    font-weight: 700;
+    margin:      0;
+}
+
+.hxrv-panel__count {
+    font-size:   12px;
+    opacity:     0.8;
+}
+
+.hxrv-panel__body {
+    overflow-y: auto;
+    flex:       1;
+    padding:    12px;
+}
+
+.hxrv-panel__footer {
+    padding:     10px 12px;
+    border-top:  1px solid var(--hxrv-gray-200);
+    display:     flex;
+    gap:         8px;
+    flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   ピン入力フォーム
+   -------------------------------------------------------------------------- */
+.hxrv-form {
+    background:   var(--hxrv-gray-100);
+    border-radius: 6px;
+    padding:      12px;
+    margin-bottom: 12px;
+}
+
+.hxrv-form__label {
+    display:     block;
+    font-size:   11px;
+    font-weight: 600;
+    color:       var(--hxrv-gray-500);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.hxrv-form__selector {
+    font-size:    11px;
+    color:        var(--hxrv-gray-800);
+    background:   var(--hxrv-white);
+    border:       1px solid var(--hxrv-gray-200);
+    border-radius: 4px;
+    padding:      4px 6px;
+    word-break:   break-all;
+    margin-bottom: 8px;
+    font-family:  monospace;
+}
+
+.hxrv-form__textarea {
+    width:        100%;
+    min-height:   80px;
+    border:       1px solid var(--hxrv-gray-200);
+    border-radius: 4px;
+    padding:      6px 8px;
+    font-size:    13px;
+    resize:       vertical;
+    box-sizing:   border-box;
+    margin-bottom: 8px;
+}
+
+.hxrv-form__textarea:focus {
+    outline:     none;
+    border-color: var(--hxrv-green);
+    box-shadow:  0 0 0 2px var(--hxrv-green-pale);
+}
+
+/* --------------------------------------------------------------------------
+   ピンリスト
+   -------------------------------------------------------------------------- */
+.hxrv-pin-item {
+    border:       1px solid var(--hxrv-gray-200);
+    border-radius: 6px;
+    padding:      10px 12px;
+    margin-bottom: 8px;
+    cursor:       pointer;
+    transition:   border-color 0.15s ease;
+}
+
+.hxrv-pin-item:hover,
+.hxrv-pin-item--active {
+    border-color: var(--hxrv-green);
+    background:   var(--hxrv-green-pale);
+}
+
+.hxrv-pin-item--resolved {
+    opacity: 0.55;
+}
+
+.hxrv-pin-item__meta {
+    display:    flex;
+    gap:        6px;
+    font-size:  11px;
+    color:      var(--hxrv-gray-500);
+    margin-bottom: 4px;
+}
+
+.hxrv-pin-item__comment {
+    font-size:   13px;
+    color:       var(--hxrv-gray-800);
+    margin:      0;
+    white-space: pre-wrap;
+    word-break:  break-word;
+}
+
+.hxrv-pin-item__selector {
+    font-size:   10px;
+    color:       var(--hxrv-gray-500);
+    font-family: monospace;
+    word-break:  break-all;
+    margin-top:  4px;
+}
+
+/* --------------------------------------------------------------------------
+   ボタン
+   -------------------------------------------------------------------------- */
+.hxrv-btn {
+    display:        inline-flex;
+    align-items:    center;
+    gap:            4px;
+    padding:        6px 12px;
+    border-radius:  4px;
+    border:         none;
+    cursor:         pointer;
+    font-size:      12px;
+    font-weight:    600;
+    transition:     background 0.15s ease;
+}
+
+.hxrv-btn--primary {
+    background: var(--hxrv-green);
+    color:      var(--hxrv-white);
+}
+
+.hxrv-btn--primary:hover {
+    background: var(--hxrv-green-light);
+}
+
+.hxrv-btn--ghost {
+    background: transparent;
+    color:      var(--hxrv-gray-800);
+    border:     1px solid var(--hxrv-gray-200);
+}
+
+.hxrv-btn--ghost:hover {
+    background: var(--hxrv-gray-100);
+}
+
+.hxrv-btn--danger {
+    background: transparent;
+    color:      #C0392B;
+    border:     1px solid #E8B0A8;
+}
+
+.hxrv-btn--danger:hover {
+    background: #FBEAE8;
+}
+
+.hxrv-btn--export {
+    background: var(--hxrv-green);
+    color:      var(--hxrv-white);
+    flex:       1;
+}
+
+.hxrv-btn--place {
+    background: var(--hxrv-gray-100);
+    color:      var(--hxrv-gray-800);
+    border:     1px solid var(--hxrv-gray-200);
+    flex:       1;
+}
+
+.hxrv-btn--place:hover {
+    background: var(--hxrv-green-pale);
+    border-color: var(--hxrv-green);
+}
+
+/* --------------------------------------------------------------------------
+   ローディング / 空状態
+   -------------------------------------------------------------------------- */
+.hxrv-empty {
+    text-align:  center;
+    color:       var(--hxrv-gray-500);
+    font-size:   12px;
+    padding:     24px 0;
+}
+
+.hxrv-badge {
+    font-size:    10px;
+    font-weight:  700;
+    padding:      1px 5px;
+    border-radius: 10px;
+    background:   var(--hxrv-green-pale);
+    color:        var(--hxrv-green);
+}
+
+/* --------------------------------------------------------------------------
+   配置モード時: カーソル外のクリック可視化
+   -------------------------------------------------------------------------- */
+body.hxrv-placing * {
+    cursor: crosshair !important;
+}
+
+/* --------------------------------------------------------------------------
+   ピンナビゲーション: スクロール先ハイライト
+   -------------------------------------------------------------------------- */
+.hxrv-pin-marker--highlight {
+    animation: hxrv-highlight 1.5s ease-out forwards;
+}
+
+@keyframes hxrv-highlight {
+    0%   { transform: scale(1.8); box-shadow: 0 0 0 6px rgba(15,110,86,0.4); }
+    60%  { transform: scale(1.4); box-shadow: 0 0 0 3px rgba(15,110,86,0.2); }
+    100% { transform: scale(1);   box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+}
+
+/* --------------------------------------------------------------------------
+   ピン番号ナビボタン（パネルリスト内）
+   -------------------------------------------------------------------------- */
+.hxrv-pin-nav-btn {
+    display:        inline-flex;
+    align-items:    center;
+    justify-content: center;
+    min-width:      24px;
+    height:         20px;
+    padding:        0 5px;
+    border-radius:  10px;
+    background:     var(--hxrv-green);
+    color:          var(--hxrv-white);
+    font-size:      11px;
+    font-weight:    700;
+    border:         none;
+    cursor:         pointer;
+    transition:     transform 0.15s ease, background 0.15s ease;
+    flex-shrink:    0;
+}
+
+.hxrv-pin-nav-btn:hover {
+    background:  var(--hxrv-green-light);
+    transform:   scale(1.1);
+}
+
+.hxrv-pin-item--resolved .hxrv-pin-nav-btn {
+    background: var(--hxrv-gray-500);
+}
