@@ -93,11 +93,12 @@ HxrvAcms/                                ← これが正しい
 ### JS読み込み順に関する注意（重要）
 
 手順4で `hxrv-acms.js` を **`<head>` で同期読み込み**するのは意図的です。
-a-blog cms 3.2 は Alpine.js を同梱していないため、hxrv-overlay.html 側で
-CDN から Alpine.js を `defer` で読み込みます。
+a-blog cms 3.2 は Alpine.js を同梱していないため、プラグインが Alpine.js
+v3.15.12 を同梱し（assets/js/alpine.min.js）、hxrv-overlay.html 側で
+`defer` 読み込みします（v1.1.0でCDN依存を廃止。オフライン・イントラ環境対応）。
 
 - `hxrv-acms.js`（head・同期）→ `hxrvApp()` をグローバル定義
-- Alpine.js CDN（hxrv-overlay.html内・defer）→ DOM解析後に評価
+- Alpine.js 同梱版（hxrv-overlay.html内・defer）→ DOM解析後に評価
 
 この順序が崩れると `hxrvApp is not defined` になります。
 
@@ -136,11 +137,17 @@ POST fd: ACMS_POST_HxrvPinStatus      → JSON: { success, status }
 
 a-blog cms 3.2 の `vendor.js` には **Alpine.js は含まれない**。
 
-HXRV は CDN の Alpine.js を `hxrv-overlay.html` 内で読み込む。
+HXRV はプラグイン同梱の Alpine.js（assets/js/alpine.min.js、v3.15.12 =
+WordPress版と同一）を `hxrv-overlay.html` 内で読み込む。
 読み込み順:
 
 1. `<head>` の `hxrv-acms.js`（同期）→ `hxrvApp()` をグローバル定義
-2. `hxrv-overlay.html` の `Alpine CDN`（defer）→ DOM 解析後に `x-data="hxrvApp()"` を処理
+2. `hxrv-overlay.html` の Alpine 同梱版（defer）→ DOM 解析後に `x-data="hxrvApp()"` を処理
+
+チラつき防止として x-show 要素には `x-cloak` を付与し、CSS 側の
+`[x-cloak] { display: none !important; }` で初期化前を非表示にしている。
+また #hxrv-root 配下にはテーマCSSの継承を遮断する防御的リセット
+（box-sizing / 見出し / ボタン / リスト）を入れている（v1.1.0）。
 
 この順序が崩れると `hxrvApp is not defined` エラーになる。
 

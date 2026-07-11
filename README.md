@@ -40,7 +40,7 @@ CSS・Alpine.js・APIエンドポイントのパスはここで**直接指定**�
 | 設定 | 内容 | 直下設置の例 | サブディレクトリ(/hoge/)の例 |
 |---|---|---|---|
 | ① CSS | hxrv.css のパス | `/extension/plugins/HxrvAcms/assets/css/hxrv.css` | `/hoge/extension/plugins/HxrvAcms/assets/css/hxrv.css` |
-| ② Alpine | CDN | 変更不要 | 変更不要 |
+| ② Alpine | 同梱（assets/js/alpine.min.js） | 変更不要 | 冒頭に `/hoge` を追加 |
 | ③ API | data-api-base | `/bid/1/admin/app_hxrv_api/` | `/hoge/bid/1/admin/app_hxrv_api/` |
 
 `bid` の番号は、レビュー対象のブログIDに合わせてください（親ブログなら通常 `1`）。
@@ -58,7 +58,7 @@ HXRV は以下の順序で読み込む必要があります。
    <!-- END_IF -->
    ```
    ※ サブディレクトリ設置なら先頭にディレクトリ名を付ける（例 `/hoge/extension/...`）
-2. `hxrv-overlay.html` 内の Alpine.js CDN（defer）→ DOM解析後に `x-data="hxrvApp()"` を処理
+2. `hxrv-overlay.html` 内の Alpine.js 同梱版（defer）→ DOM解析後に `x-data="hxrvApp()"` を処理
 
 この順序が崩れると `hxrvApp is not defined` エラーになります。
 

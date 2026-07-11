@@ -20,8 +20,8 @@
 <!-- 【設定①】HXRV の CSS（自分の設置パスに合わせる） -->
 <link rel="stylesheet" href="/extension/plugins/HxrvAcms/assets/css/hxrv.css">
 
-<!-- 【設定②】Alpine.js（CDN。バージョンは固定推奨。基本このままでOK） -->
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+<!-- 【設定②】Alpine.js（プラグイン同梱版 v3.15.12。設置パスは設定①と同様に合わせる） -->
+<script defer src="/extension/plugins/HxrvAcms/assets/js/alpine.min.js"></script>
 
 <!-- HXRV Root Element
      ・hxrvApp() は <head> で読み込む hxrv-acms.js が定義済み（手順4参照）
@@ -55,6 +55,7 @@
          ---------------------------------------------------------------- -->
     <div
         x-show="isPlacing"
+        x-cloak
         style="position:fixed;top:12px;left:50%;transform:translateX(-50%);
                background:#E07820;color:#fff;padding:8px 16px;border-radius:20px;
                font-size:13px;font-weight:700;z-index:100000;pointer-events:none;"
@@ -68,6 +69,7 @@
     <div
         class="hxrv-panel"
         x-show="panelOpen"
+        x-cloak
         x-transition:enter="hxrv-slide-in"
         x-transition:leave="hxrv-slide-out"
         style="display:none"

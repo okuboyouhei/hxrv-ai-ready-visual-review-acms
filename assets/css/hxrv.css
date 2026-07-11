@@ -80,6 +80,45 @@
     line-height: 1.5;
 }
 
+/* Alpine初期化前のチラつき防止（x-cloak属性はAlpineが初期化時に自動除去する） */
+[x-cloak] {
+    display: none !important;
+}
+
+/* テーマCSSの継承を遮断する防御的リセット。
+   box-sizingやテーマの見出し・ボタン装飾がオーバーレイ内に漏れて
+   レイアウトが崩れるのを防ぐ */
+#hxrv-root,
+#hxrv-root *,
+#hxrv-root *::before,
+#hxrv-root *::after,
+.hxrv-pin-marker,
+.hxrv-pin-marker * {
+    box-sizing: border-box;
+}
+
+#hxrv-root h1, #hxrv-root h2, #hxrv-root h3,
+#hxrv-root h4, #hxrv-root h5, #hxrv-root h6 {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+}
+
+#hxrv-root button {
+    font-family: inherit;
+    text-transform: none;
+    letter-spacing: normal;
+    box-shadow: none;
+}
+
+#hxrv-root ul, #hxrv-root ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
 .hxrv-fab {
     width:           52px;
     height:          52px;
